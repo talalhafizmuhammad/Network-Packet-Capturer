@@ -1,1 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetWatch — Network Traffic Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #0a0d13;
+      --panel:    #0f1420;
+      --border:   #1e2a40;
+      --accent:   #00e5ff;
+      --green:    #00ff9d;
+      --yellow:   #ffd600;
+      --red:      #ff4d6d;
+      --text:     #c9d6e3;
+      --dim:      #4a5568;
+      --tcp:      #00e5ff;
+      --udp:      #00ff9d;
+      --icmp:     #ffd600;
+      --other:    #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.3rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+    }
+    .logo span { color: var(--green); }
+    .status-badge {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--dim);
+    }
+    .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--dim);
+      transition: background 0.4s;
+    }
+    .dot.active {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 1.4s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; } 50% { opacity:0.4; }
+    }
+
+    main { padding: 24px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+    .controls {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem; letter-spacing: 2px;
+      padding: 10px 28px;
+      border: none; cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+    .btn-start {
+      background: var(--green); color: #0a0d13;
+    }
+    .btn-start:hover { filter: brightness(1.15); }
+    .btn-start:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-stop {
+      background: transparent;
+      border: 1px solid var(--red);
+      color: var(--red);
+    }
+    .btn-stop:hover { background: var(--red); color: #0a0d13; }
+    .btn-stop:disabled { opacity: 0.35; cursor: not-allowed; }
+    .packet-counter {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem; color: var(--accent);
+      margin-left: auto;
+      letter-spacing: 1px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px 18px;
+    }
+    .stat-label {
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--dim);
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+    .stat-value.tcp   { color: var(--tcp); }
+    .stat-value.udp   { color: var(--udp); }
+    .stat-value.icmp  { color: var(--icmp); }
+    .stat-value.total { color: var(--accent); }
+    .stat-value.size  { color: var(--other); font-size: 1.2rem; }
+
+    .filters {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; }
+    .filter-group label {
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--dim);
+    }
+    .filter-group select,
+    .filter-group input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      padding: 7px 12px;
+      border-radius: 2px;
+      outline: none;
+      min-width: 160px;
+      transition: border-color 0.2s;
+    }
+    .filter-group select:focus,
+    .filter-group input:focus { border-color: var(--accent); }
+    .btn-filter {
+      background: var(--accent); color: #0a0d13;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.82rem; letter-spacing: 2px;
+      padding: 8px 20px; border: none;
+      border-radius: 2px; cursor: pointer;
+    }
+    .btn-filter:hover { filter: brightness(1.15); }
+    .btn-reset {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.82rem; letter-spacing: 2px;
+      padding: 8px 20px; border-radius: 2px; cursor: pointer;
+    }
+    .btn-reset:hover { border-color: var(--text); color: var(--text); }
+
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .table-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-title {
+      font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--dim);
+    }
+    .table-scroll { overflow-x: auto; max-height: 380px; overflow-y: auto; }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+    }
+    thead th {
+      background: #0a0f1a;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-size: 0.68rem;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+    }
+    tbody tr {
+      border-bottom: 1px solid #131c2e;
+      transition: background 0.15s;
+    }
+    tbody tr:hover { background: #141d2f; }
+    tbody td { padding: 8px 14px; color: var(--text); }
+    .proto-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 2px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .proto-TCP  { background: rgba(0,229,255,0.12); color: var(--tcp); }
+    .proto-UDP  { background: rgba(0,255,157,0.12); color: var(--udp); }
+    .proto-ICMP { background: rgba(255,214,0,0.12);  color: var(--icmp); }
+    .proto-OTHER{ background: rgba(167,139,250,0.12);color: var(--other); }
+
+    .log-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .log-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .log-title {
+      font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--dim);
+    }
+    .log-body {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.78rem;
+      padding: 14px 18px;
+      height: 160px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .log-entry { display: flex; gap: 10px; }
+    .log-time  { color: var(--dim); flex-shrink: 0; }
+    .log-msg   { color: var(--green); }
+    .log-msg.warn  { color: var(--yellow); }
+    .log-msg.info  { color: var(--accent); }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .empty-row td {
+      text-align: center; color: var(--dim);
+      padding: 40px; font-size: 0.85rem; letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NET<span>WATCH</span></div>
+  <div class="status-badge">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">IDLE</span>
+  </div>
+</header>
+
+<main>
+
+  <div class="controls">
+    <button class="btn btn-start" id="startBtn" onclick="startMonitoring()">▶ START</button>
+    <button class="btn btn-stop"  id="stopBtn"  onclick="stopMonitoring()" disabled>■ STOP</button>
+    <div class="packet-counter" id="pktCounter">PACKETS: 0</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Packets</div>
+      <div class="stat-value total" id="statTotal">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">TCP</div>
+      <div class="stat-value tcp" id="statTCP">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">UDP</div>
+      <div class="stat-value udp" id="statUDP">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ICMP</div>
+      <div class="stat-value icmp" id="statICMP">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Packet Size</div>
+      <div class="stat-value size" id="statAvg">0 B</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <label>Protocol</label>
+      <select id="filterProto">
+        <option value="ALL">All Protocols</option>
+        <option value="TCP">TCP</option>
+        <option value="UDP">UDP</option>
+        <option value="ICMP">ICMP</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Source IP</label>
+      <input type="text" id="filterSrc" placeholder="e.g. 192.168.1.5" />
+    </div>
+    <div class="filter-group">
+      <label>Destination IP</label>
+      <input type="text" id="filterDst" placeholder="e.g. 8.8.8.8" />
+    </div>
+    <button class="btn-filter" onclick="applyFilter()">FILTER</button>
+    <button class="btn-reset"  onclick="resetFilter()">RESET</button>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header">
+      <div class="table-title">Live Packet Capture</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--dim)" id="rowCount">0 records</div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>Source IP</th>
+            <th>Src Port</th>
+            <th>Destination IP</th>
+            <th>Dst Port</th>
+            <th>Protocol</th>
+            <th>Service</th>
+            <th>Size (B)</th>
+          </tr>
+        </thead>
+        <tbody id="packetTable">
+          <tr class="empty-row"><td colspan="9">No packets captured yet. Click START to begin.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="log-wrap">
+    <div class="log-header">
+      <div class="log-title">System Log</div>
+      <button class="btn-reset" onclick="clearLog()" style="font-size:0.7rem;padding:4px 12px;">CLEAR</button>
+    </div>
+    <div class="log-body" id="logBody"></div>
+  </div>
+
+</main>
+
+<script>
+  let pollInterval = null;
+  let activeFilters = { protocol: "ALL", src_ip: "", dst_ip: "" };
+
+  function log(msg, type = "") {
+    const body = document.getElementById("logBody");
+    const entry = document.createElement("div");
+    entry.className = "log-entry";
+    const now = new Date().toTimeString().slice(0,8);
+    entry.innerHTML = `<span class="log-time">[${now}]</span><span class="log-msg ${type}">${msg}</span>`;
+    body.prepend(entry);
+    if (body.children.length > 80) body.lastChild.remove();
+  }
+  function clearLog() { document.getElementById("logBody").innerHTML = ""; }
+
+  function setStatus(active) {
+    const dot  = document.getElementById("statusDot");
+    const text = document.getElementById("statusText");
+    dot.className  = active ? "dot active" : "dot";
+    text.textContent = active ? "MONITORING" : "IDLE";
+  }
+
+  async function startMonitoring() {
+    try {
+      const r = await fetch("/api/start", { method: "POST" });
+      const d = await r.json();
+      if (d.status === "started" || d.status === "already_running") {
+        document.getElementById("startBtn").disabled = true;
+        document.getElementById("stopBtn").disabled  = false;
+        setStatus(true);
+        log("Packet sniffing started.", "info");
+        pollInterval = setInterval(pollData, 1000);
+      }
+    } catch(e) { log("ERROR: Could not reach server.", "warn"); }
+  }
+
+  async function stopMonitoring() {
+    clearInterval(pollInterval);
+    try {
+      await fetch("/api/stop", { method: "POST" });
+    } catch(e) {}
+    document.getElementById("startBtn").disabled = false;
+    document.getElementById("stopBtn").disabled  = true;
+    setStatus(false);
+    log("Monitoring stopped.", "warn");
+  }
+
+  async function pollData() {
+    await Promise.all([fetchPackets(), fetchStats()]);
+  }
+
+  async function fetchPackets() {
+    const p = new URLSearchParams({
+      protocol: activeFilters.protocol,
+      src_ip:   activeFilters.src_ip,
+      dst_ip:   activeFilters.dst_ip,
+    });
+    try {
+      const r = await fetch("/api/packets?" + p);
+      const packets = await r.json();
+      renderTable(packets);
+    } catch(e) {}
+  }
+
+  async function fetchStats() {
+    try {
+      const r = await fetch("/api/stats");
+      const s = await r.json();
+      document.getElementById("statTotal").textContent = s.total;
+      document.getElementById("statTCP").textContent   = s.tcp;
+      document.getElementById("statUDP").textContent   = s.udp;
+      document.getElementById("statICMP").textContent  = s.icmp;
+      document.getElementById("statAvg").textContent   = s.avg_size + " B";
+      document.getElementById("pktCounter").textContent = "PACKETS: " + s.total;
+    } catch(e) {}
+  }
+
+  function renderTable(packets) {
+    const tbody = document.getElementById("packetTable");
+    document.getElementById("rowCount").textContent = packets.length + " records";
+    if (packets.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No packets match current filters.</td></tr>';
+      return;
+    }
+    const shown = packets.slice(-200).reverse();
+    tbody.innerHTML = shown.map(p => `
+      <tr>
+        <td style="color:var(--dim)">${p.id}</td>
+        <td>${p.time}</td>
+        <td>${p.src_ip}</td>
+        <td style="color:var(--dim)">${p.src_port ?? "—"}</td>
+        <td>${p.dst_ip}</td>
+        <td style="color:var(--dim)">${p.dst_port ?? "—"}</td>
+        <td><span class="proto-tag proto-${p.protocol}">${p.protocol}</span></td>
+        <td style="color:var(--accent)">${p.service}</td>
+        <td>${p.size}</td>
+      </tr>
+    `).join("");
+  }
+
+  function applyFilter() {
+    activeFilters.protocol = document.getElementById("filterProto").value;
+    activeFilters.src_ip   = document.getElementById("filterSrc").value.trim();
+    activeFilters.dst_ip   = document.getElementById("filterDst").value.trim();
+    log(`Filter applied — Proto: ${activeFilters.protocol}, Src: "${activeFilters.src_ip}", Dst: "${activeFilters.dst_ip}"`, "info");
+    fetchPackets();
+  }
+
+  function resetFilter() {
+    document.getElementById("filterProto").value = "ALL";
+    document.getElementById("filterSrc").value   = "";
+    document.getElementById("filterDst").value   = "";
+    activeFilters = { protocol: "ALL", src_ip: "", dst_ip: "" };
+    log("Filters cleared.", "warn");
+    fetchPackets();
+  }
+
+  log("NetWatch initialized. Ready to capture.", "info");
+  fetch("/api/status").then(r => r.json()).then(d => {
+    if (d.monitoring) {
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("stopBtn").disabled  = false;
+      setStatus(true);
+      log("Resumed active monitoring session.", "info");
+      pollInterval = setInterval(pollData, 1000);
+    }
+  }).catch(() => {});
+</script>
+</body>
+</html>
