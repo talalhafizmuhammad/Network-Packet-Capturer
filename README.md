@@ -8,7 +8,7 @@ A real-time network traffic monitoring platform built with **Python (Flask + Sca
 
 ## 📸 Preview
 
-> *(Add screenshots of the running application here)*
+<img width="1600" height="867" alt="image" src="https://github.com/user-attachments/assets/e72f776d-42fe-46c0-b03e-5bdf98fb190b" />
 
 ---
 
