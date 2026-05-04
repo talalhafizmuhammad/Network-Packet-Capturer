@@ -1,4 +1,4 @@
-# 🔍 NetWatch — Network Traffic Monitoring and Analysis Platform
+# NetWatch — Network Traffic Monitoring and Analysis Platform
 
 A real-time network traffic monitoring platform built with **Python (Flask + Scapy)** and a clean **HTML/CSS/JS** web interface. Captures live packets from your network interface, displays them in a filterable table, and shows protocol statistics — all in your browser.
 
@@ -6,13 +6,13 @@ A real-time network traffic monitoring platform built with **Python (Flask + Sca
 
 ---
 
-## 📸 Preview
+## Preview
 
 <img width="1600" height="867" alt="image" src="https://github.com/user-attachments/assets/e72f776d-42fe-46c0-b03e-5bdf98fb190b" />
 
 ---
 
-## ✨ Features
+## Features
 
 - ✅ **Real-time packet sniffing** using Scapy (live capture, no dataset needed)
 - ✅ Start / Stop monitoring controls
@@ -25,7 +25,7 @@ A real-time network traffic monitoring platform built with **Python (Flask + Sca
 
 ---
 
-## 🗂️ Project Structure
+##  Project Structure
 
 ```
 network-monitor/
@@ -38,7 +38,7 @@ network-monitor/
 
 ---
 
-## ⚙️ Setup & Run
+##  Setup & Run
 
 ### Prerequisites
 - Python 3.8+
@@ -74,7 +74,7 @@ http://localhost:5000
 
 ---
 
-## 📖 Methodology
+##  Methodology
 
 ### Step 1 — Technology Selection
 Chose **Python** for the backend because of Scapy's powerful packet-capture capabilities and Flask's simplicity for serving a web interface. Plain HTML/CSS/JS was used for the frontend as required, with no heavy frameworks.
@@ -104,7 +104,7 @@ Tested by:
 
 ---
 
-## 🧱 Challenges Faced
+##  Challenges Faced
 
 | # | Challenge | Solution |
 |---|-----------|----------|
@@ -116,7 +116,7 @@ Tested by:
 
 ---
 
-## 🚀 Future Work
+##  Future Work
 
 - **Persistent logging** — Save captured packets to a SQLite database or CSV file for post-session analysis.
 - **Live charts** — Add real-time protocol distribution charts (pie/bar) using Chart.js.
@@ -129,7 +129,7 @@ Tested by:
 
 ---
 
-## 📚 References (Libraries)
+##  References (Libraries)
 
 | Library | Version | Purpose |
 |---------|---------|---------|
@@ -142,16 +142,16 @@ Tested by:
 
 ---
 
-## 📋 Dataset Note
+##  Dataset Note
 
 This project implements **real-time packet sniffing** — no pre-recorded dataset is required. All network data is captured live from the active network interface at runtime using Scapy.
 
 ---
 
-## ⚠️ Disclaimer
+##  Disclaimer
 
 This tool is built for educational purposes as part of a university Computer Networks course. Only use it to monitor traffic on networks you own or have explicit permission to monitor.
 
 ---
 
-*Built by [Your Name] | University of the Punjab, FCIT*
+*Built by Hafiz Muhammad Talal | University of the Punjab, FCIT* | @2026 All rights reserved
